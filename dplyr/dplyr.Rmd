@@ -1,8 +1,30 @@
+---
+title: "Introduction to dplyr"
+author: "Dahun Seo"
+date: "2025-05-13"
+geometry: "top=2cm, bottom=2cm, left=3cm, right=3cm"
+header-includes:
+output:
+  pdf_document: 
+    latex_engine: xelatex
+    highlight: zenburn
+    toc: true
+    toc_depth: 2
+    number_sections: true
+  html_document: default
+editor_options: 
+  chunk_output_type: console
+---
 
-# -*- coding: utf-8 -*-
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, collapse = T, comment = "#>")
+knitr::opts_chunk$set(tidy.opts = list(width.cutoff = 50), tidy = TRUE)
+options(tibble.print_min = 4L, tibble.print_max = 4L)
+```
 
-# dplyr 1.1.4
+# Setup
 
+```{r, message=FALSE}
 rm(list = ls())
 
 suppressPackageStartupMessages({
@@ -10,32 +32,72 @@ suppressPackageStartupMessages({
     library(tidyr) # for billboard dataset
     library(stringr) # for stringr::str_replace
 })
+```
 
+```{r}
 utils::packageVersion("dplyr")
+```
 
-dim(starwars) # starwars is in dplyr
-starwars
+# Introduction
 
-# dplyr::glimpse
-starwars %>% dplyr::glimpse()
+## Why `dplyr`?
 
-# dplyr::near
+- `dplyr` is `R` package for data pre-processing.
+- Very fast and intuitive usage using pipe operator
+
+## The pipe operator
+
+All of the `dplyr` functions take a data frame (or tibble) as the first argument.
+Rather than forcing the user to either save intermediate objects or nest functions, dplyr provides the `%>%` operator from `magrittr`.
+`x %>% f(y)` turns into `f(x, y)` so the result from one step is then "piped" into the next step.
+
+**Warm up: dplyr::near**
+
+```{r}
 sqrt(3)^2 == 3
 dplyr::near(sqrt(3)^2, 3)
+```
 
-# dplyr::filter
+**Example data: `starwars`**
+
+```{r}
+dim(starwars) # starwars is in dplyr
+starwars
+```
+
+# Functions in `dplyr`
+
+## dplyr::glimpse
+```{r}
+starwars %>% dplyr::glimpse()
+```
+
+Basic `R` code:
+```{r results="hide"}
+str(starwars)
+```
+
+## dplyr::filter
+
+Return rows with matching conditions
+
+```{r}
 starwars %>%
     dplyr::filter(skin_color == "light", eye_color == "brown")
 
 starwars %>%
     dplyr::filter(skin_color == "light" & eye_color == "brown") # same
+```
 
+Basic `R` code:
+
+```{r}
 starwars[starwars$skin_color == "light" & starwars$eye_color == "brown", ] # same
-
 base::subset(starwars, skin_color == "light" & eye_color == "brown") # same
-
 starwars[which(starwars$skin_color == "light" & starwars$eye_color == "brown"), , drop = FALSE] # same
+```
 
+```{r}
 starwars %>%
     dplyr::filter(row_number() == 1)
 
@@ -44,23 +106,41 @@ starwars %>%
 
 starwars %>%
     dplyr::filter(between(row_number(), 2, 5))
+```
 
-# dplyr::arrange
+## dplyr::arrange
+
+```{r}
 starwars %>%
     dplyr::arrange(height, mass) # first is priority
 
 starwars %>%
     dplyr::arrange(mass, height) # different
+```
 
+Basic `R` code:
+
+```{r}
 starwars[order(starwars$mass, starwars$height), ] # same
+```
 
+desc(): descending order
+
+```{r}
 starwars %>%
     dplyr::arrange(desc(height)) # desc(): descending order
+```
 
+Basic `R` code:
+
+```{r}
 starwars[order(starwars$height, decreasing = TRUE), ] # same
 starwars[order(-starwars$height), ] # same
+```
 
-# dplyr::slice
+## dplyr::slice
+
+```{r}
 starwars %>%
     dplyr::slice(5:10)
 
@@ -92,16 +172,24 @@ starwars %>%
 starwars %>%
     dplyr::filter(!is.na(height)) %>%
     dplyr::slice_min(height, n = 3)
+```
 
-# dplyr::select
+## dplyr::select
+
+```{r}
 starwars %>% dplyr::select(name, height)
+```
+
+Basic `R` code:
+
+```{r}
 starwars[c("name", "height")] # same
 base::subset(starwars, select = c(name, height)) # same
+```
 
-# Select all columns between hair_color and eye_color
-starwars %>%
-    dplyr::select(hair_color:eye_color)
+Variation:
 
+```{r}
 # Select all columns except those from hair_color to eye_color
 starwars %>%
     dplyr::select(!(hair_color:eye_color))
@@ -137,7 +225,10 @@ starwars %>%
 # Select with num_range()
 billboard %>% select(starts_with("wk"))
 billboard %>% select(num_range("wk", seq(1, 5, by = 2)))
+```
 
+
+```{r}
 # Select columns with variable (any_of is useful)
 target <- c("height", "mass", "kkk")
 
@@ -146,7 +237,10 @@ target <- c("height", "mass", "kkk")
 
 starwars %>%
     dplyr::select(any_of(target)) # no warning
+```
 
+
+```{r}
 # Select with where
 starwars %>%
     dplyr::select(where(is.numeric))
@@ -186,12 +280,23 @@ starwars %>%
 
 starwars %>%
     dplyr::select(identity(height))
+```
 
-# dplyr::distinct
+## dplyr::distinct
+
+```{r}
 starwars %>% dplyr::distinct(eye_color)
-base::unique(starwars["eye_color"]) # same
+```
 
-# dplyr::pull
+Basic `R` code:
+
+```{r}
+base::unique(starwars["eye_color"]) # same
+```
+
+## dplyr::pull
+
+```{r}
 starwars %>% dplyr::pull(2)
 starwars %>% dplyr::pull(height)
 starwars %>% dplyr::pull("height")
@@ -199,8 +304,11 @@ starwars %>% dplyr::pull("height")
 starwars[[1]] # numeric
 starwars$height # numeric
 starwars["height"] # tibble
+```
 
-# dplyr::relocate
+## dplyr::relocate
+
+```{r}
 starwars %>%
     dplyr::relocate(sex:homeworld, .before = height)
 
@@ -212,8 +320,11 @@ starwars[base::union(c("sex", "gender"), names(starwars))] # same
 starwars %>% dplyr::relocate(sex, gender, .after = last_col())
 to_back <- c("sex", "gender")
 starwars[c(base::setdiff(names(starwars), to_back), to_back)] # same
+```
 
-# dplyr::rename, rename_with
+## dplyr::rename, rename_with
+
+```{r}
 starwars %>%
     dplyr::rename(home_world = homeworld)
 
@@ -232,8 +343,11 @@ colnames(starwars2)
 starwars2 %>%
     dplyr::rename_with(~ stringr::str_replace(.x, "_", "____")) %>%
     colnames()
+```
 
-# dplyr::mutate, transmute
+## dplyr::mutate, transmute
+
+```{r}
 starwars %>%
     dplyr::mutate(height_m = height / 100)
 
@@ -257,17 +371,23 @@ starwars %>%
 starwars2$BMI <- starwars2$mass / (starwars2$bbbbbbbb / 100)^2
 starwars2["BMI"]
 
-base::transform(starwars2, ccccccc = bbbbbbbb  / 100)
+# base::transform(starwars2, ccccccc = bbbbbbbb  / 100)
+```
 
-# dplyr::summarise
+## dplyr::summarise
+
+```{r}
 starwars %>%
     dplyr::summarise(
         height = mean(height, na.rm = TRUE),
         mass = mean(mass, na.rm = TRUE),
         number_of_rows = n()
     )
+```
 
-# dplyr::group_by
+## dplyr::group_by
+
+```{r}
 # grouping doesn't change how the data looks
 dplyr::group_by(starwars, sex)
 dplyr::group_by(starwars, sex = as.factor(sex))
@@ -282,8 +402,12 @@ starwars %>%
     dplyr::filter(!is.na(height)) %>%
     dplyr::group_by(sex, height_binned = cut(height, 3)) %>%
     dplyr::summarise(mean_of_height = mean(height, na.rm = TRUE))
+```
 
-# dplyr::count
+
+## dplyr::count
+
+```{r}
 starwars %>% dplyr::count(sex)
 
 # be careful with factor type
@@ -301,8 +425,11 @@ starwars %>%
 
 starwars %>% dplyr::count(species, sort = TRUE)
 starwars %>% dplyr::count(sex, gender, sort = TRUE)
+```
 
-# dplyr::tally
+## dplyr::tally
+
+```{r}
 starwars %>% dplyr::tally()
 
 # be careful with factor type
@@ -320,8 +447,12 @@ starwars %>%
     dplyr::mutate(sex = factor(sex, levels = c(unique(sex), "kkkk"))) %>%
     dplyr::group_by(sex, .drop = FALSE) %>%
     dplyr::tally(sort = TRUE)
+```
 
-# across
+
+## across
+
+```{r}
 # same function on multiple columns
 # or multiple functions on multiple columns
 starwars %>%
@@ -334,8 +465,11 @@ starwars %>%
 
 starwars %>%
     dplyr::summarise(across(where(is.numeric), \(x) mean(x, na.rm = TRUE)))
+```
 
-# quasiquotation syntax
+## quasiquotation syntax
+
+```{r}
 old_name <- "mass"
 new_name <- "weight"
 
@@ -372,3 +506,4 @@ target <- "eye_color"
 
 starwars %>%
     dplyr::distinct(!!sym(target))
+```
